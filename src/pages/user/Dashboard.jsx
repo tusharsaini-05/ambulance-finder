@@ -2,15 +2,7 @@ import React, { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useBooking } from '../../contexts/BookingContext'
-import { 
-  Ambulance, 
-  Clock, 
-  MapPin, 
-  Plus, 
-  History,
-  AlertTriangle,
-  CheckCircle
-} from 'lucide-react'
+import { Plane as Ambulance, Clock, MapPin, Plus, History, AlertTriangle, CheckCircle } from 'lucide-react'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import BookingCard from '../../components/BookingCard'
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Ambulance, Menu, X, User, LogOut, History, MapPin } from 'lucide-react'
+import { Plane as Ambulance, Menu, X, User, LogOut, History, MapPin } from 'lucide-react'
 
 const Header = () => {
   const { user, userProfile, signOut, isDriver } = useAuth()

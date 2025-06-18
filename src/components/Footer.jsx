@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { Ambulance, Phone, Mail, MapPin } from 'lucide-react'
+import { Plane as Ambulance, Phone, Mail, MapPin } from 'lucide-react'
 
 const Footer = () => {
   return (

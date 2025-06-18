@@ -1,5 +1,5 @@
 import React from 'react'
-import { Ambulance } from 'lucide-react'
+import { Plane as Ambulance } from 'lucide-react'
 
 const LoadingSpinner = ({ size = 'md', text = 'Loading...' }) => {
   const sizeClasses = {

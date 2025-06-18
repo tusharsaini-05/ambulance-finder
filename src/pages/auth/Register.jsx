@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { Ambulance, Eye, EyeOff, AlertCircle, User, Car } from 'lucide-react'
+import { Plane as Ambulance, Eye, EyeOff, AlertCircle, User, Car } from 'lucide-react'
 
 const Register = () => {
   const [searchParams] = useSearchParams()

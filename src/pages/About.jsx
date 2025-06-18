@@ -1,5 +1,5 @@
 import React from 'react'
-import { Ambulance, Heart, Users, Award, Clock, Shield } from 'lucide-react'
+import { Plane as Ambulance, Heart, Users, Award, Clock, Shield } from 'lucide-react'
 
 const About = () => {
   const stats = [

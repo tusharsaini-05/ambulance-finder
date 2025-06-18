@@ -1,16 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { 
-  Ambulance, 
-  Clock, 
-  MapPin, 
-  Shield, 
-  Users, 
-  Star,
-  ArrowRight,
-  Phone
-} from 'lucide-react'
+import { Plane as Ambulance, Clock, MapPin, Shield, Users, Star, ArrowRight, Phone } from 'lucide-react'
 
 const Home = () => {
   const { user, isDriver } = useAuth()

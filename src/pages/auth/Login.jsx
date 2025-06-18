@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { Ambulance, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { Plane as Ambulance, Eye, EyeOff, AlertCircle } from 'lucide-react'
 
 const Login = () => {
   const [formData, setFormData] = useState({
