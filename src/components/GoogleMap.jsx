@@ -1,0 +1,172 @@
+import React, { useEffect, useRef, useState } from 'react'
+import { MapPin, Navigation } from 'lucide-react'
+
+const GoogleMap = ({ 
+  center, 
+  zoom = 13, 
+  markers = [], 
+  onMapClick,
+  showUserLocation = true,
+  className = "w-full h-96"
+}) => {
+  const mapRef = useRef(null)
+  const [map, setMap] = useState(null)
+  const [userLocation, setUserLocation] = useState(null)
+  const markersRef = useRef([])
+
+  // Initialize map
+  useEffect(() => {
+    if (!mapRef.current || !window.google) return
+
+    const mapInstance = new window.google.maps.Map(mapRef.current, {
+      center: center || { lat: 40.7128, lng: -74.0060 }, // Default to NYC
+      zoom,
+      styles: [
+        {
+          featureType: 'poi.business',
+          stylers: [{ visibility: 'off' }]
+        },
+        {
+          featureType: 'poi.park',
+          elementType: 'labels.text',
+          stylers: [{ visibility: 'off' }]
+        }
+      ]
+    })
+
+    setMap(mapInstance)
+
+    // Add click listener
+    if (onMapClick) {
+      mapInstance.addListener('click', (event) => {
+        onMapClick({
+          lat: event.latLng.lat(),
+          lng: event.latLng.lng()
+        })
+      })
+    }
+
+    return () => {
+      // Cleanup markers
+      markersRef.current.forEach(marker => marker.setMap(null))
+      markersRef.current = []
+    }
+  }, [center, zoom, onMapClick])
+
+  // Get user location
+  useEffect(() => {
+    if (showUserLocation && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          }
+          setUserLocation(location)
+          
+          if (map && !center) {
+            map.setCenter(location)
+          }
+        },
+        (error) => {
+          console.warn('Error getting user location:', error)
+        }
+      )
+    }
+  }, [map, showUserLocation, center])
+
+  // Update markers
+  useEffect(() => {
+    if (!map) return
+
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.setMap(null))
+    markersRef.current = []
+
+    // Add new markers
+    markers.forEach((markerData) => {
+      const marker = new window.google.maps.Marker({
+        position: markerData.position,
+        map,
+        title: markerData.title,
+        icon: markerData.icon || {
+          url: markerData.type === 'ambulance' 
+            ? 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 10H6"/>
+                  <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
+                  <path d="M19 18h2a1 1 0 0 0 1-1v-3.28a1 1 0 0 0-.684-.948l-1.923-.641a1 1 0 0 1-.578-.502l-1.539-3.076A1 1 0 0 0 16.382 8H14"/>
+                  <path d="M8 8v4"/>
+                  <path d="M9 18h6"/>
+                  <circle cx="17" cy="18" r="2"/>
+                  <circle cx="7" cy="18" r="2"/>
+                </svg>
+              `)
+            : markerData.type === 'pickup'
+            ? 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="green" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              `)
+            : 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="red" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              `),
+          scaledSize: new window.google.maps.Size(32, 32)
+        }
+      })
+
+      if (markerData.infoWindow) {
+        const infoWindow = new window.google.maps.InfoWindow({
+          content: markerData.infoWindow
+        })
+
+        marker.addListener('click', () => {
+          infoWindow.open(map, marker)
+        })
+      }
+
+      markersRef.current.push(marker)
+    })
+
+    // Add user location marker
+    if (userLocation && showUserLocation) {
+      const userMarker = new window.google.maps.Marker({
+        position: userLocation,
+        map,
+        title: 'Your Location',
+        icon: {
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="blue" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <circle cx="12" cy="12" r="4"/>
+            </svg>
+          `),
+          scaledSize: new window.google.maps.Size(24, 24)
+        }
+      })
+
+      markersRef.current.push(userMarker)
+    }
+  }, [map, markers, userLocation, showUserLocation])
+
+  return (
+    <div className={`relative ${className}`}>
+      <div ref={mapRef} className="w-full h-full rounded-lg" />
+      
+      {!window.google && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+          <div className="text-center">
+            <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+            <p className="text-gray-500">Loading map...</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default GoogleMap
