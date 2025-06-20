@@ -46,6 +46,39 @@ export const db = {
     return data
   },
 
+  // Pickup Locations
+  async getPickupLocations() {
+    const { data, error } = await supabase
+      .from('pickup_locations')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data
+  },
+
+  async createPickupLocation(locationData) {
+    const { data, error } = await supabase
+      .from('pickup_locations')
+      .insert([locationData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  // Hospital Locations
+  async getHospitalLocations() {
+    const { data, error } = await supabase
+      .from('hospital_locations')
+      .select('*')
+      .order('name', { ascending: true })
+    
+    if (error) throw error
+    return data
+  },
+
   // Drivers
   async getAvailableDrivers(location) {
     const { data, error } = await supabase
@@ -102,6 +135,19 @@ export const db = {
             full_name,
             phone
           )
+        ),
+        pickup_locations (
+          id,
+          name,
+          latitude,
+          longitude
+        ),
+        hospital_locations (
+          id,
+          name,
+          address,
+          latitude,
+          longitude
         )
       `)
       .single()
@@ -132,6 +178,19 @@ export const db = {
             phone,
             avatar_url
           )
+        ),
+        pickup_locations (
+          id,
+          name,
+          latitude,
+          longitude
+        ),
+        hospital_locations (
+          id,
+          name,
+          address,
+          latitude,
+          longitude
         )
       `)
       .eq('id', bookingId)
@@ -171,6 +230,19 @@ export const db = {
             full_name,
             phone
           )
+        ),
+        pickup_locations (
+          id,
+          name,
+          latitude,
+          longitude
+        ),
+        hospital_locations (
+          id,
+          name,
+          address,
+          latitude,
+          longitude
         )
       `)
       .eq('user_id', userId)
@@ -190,6 +262,19 @@ export const db = {
           full_name,
           phone,
           avatar_url
+        ),
+        pickup_locations (
+          id,
+          name,
+          latitude,
+          longitude
+        ),
+        hospital_locations (
+          id,
+          name,
+          address,
+          latitude,
+          longitude
         )
       `)
       .eq('driver_id', driverId)
@@ -197,6 +282,86 @@ export const db = {
     
     if (error) throw error
     return data
+  }
+}
+
+// Google Maps helper functions
+export const mapsHelper = {
+  async calculateRoute(origin, destination) {
+    if (!window.google || !window.google.maps) {
+      throw new Error('Google Maps not loaded')
+    }
+
+    const directionsService = new window.google.maps.DirectionsService()
+    
+    return new Promise((resolve, reject) => {
+      directionsService.route(
+        {
+          origin: origin,
+          destination: destination,
+          travelMode: window.google.maps.TravelMode.DRIVING,
+          unitSystem: window.google.maps.UnitSystem.METRIC,
+          avoidHighways: false,
+          avoidTolls: false
+        },
+        (result, status) => {
+          if (status === 'OK') {
+            const route = result.routes[0]
+            const leg = route.legs[0]
+            
+            resolve({
+              distance: leg.distance.text,
+              duration: leg.duration.text,
+              polyline: route.overview_polyline,
+              steps: leg.steps
+            })
+          } else {
+            reject(new Error(`Directions request failed: ${status}`))
+          }
+        }
+      )
+    })
+  },
+
+  async geocodeAddress(address) {
+    if (!window.google || !window.google.maps) {
+      throw new Error('Google Maps not loaded')
+    }
+
+    const geocoder = new window.google.maps.Geocoder()
+    
+    return new Promise((resolve, reject) => {
+      geocoder.geocode({ address }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const location = results[0].geometry.location
+          resolve({
+            lat: location.lat(),
+            lng: location.lng(),
+            formatted_address: results[0].formatted_address
+          })
+        } else {
+          reject(new Error(`Geocoding failed: ${status}`))
+        }
+      })
+    })
+  },
+
+  async reverseGeocode(lat, lng) {
+    if (!window.google || !window.google.maps) {
+      throw new Error('Google Maps not loaded')
+    }
+
+    const geocoder = new window.google.maps.Geocoder()
+    
+    return new Promise((resolve, reject) => {
+      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          resolve(results[0].formatted_address)
+        } else {
+          reject(new Error(`Reverse geocoding failed: ${status}`))
+        }
+      })
+    })
   }
 }
 

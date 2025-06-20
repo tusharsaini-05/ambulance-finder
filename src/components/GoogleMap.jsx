@@ -6,12 +6,18 @@ const GoogleMap = ({
   zoom = 13, 
   markers = [], 
   onMapClick,
+  onLocationSelect,
+  pickupLocation,
+  dropoffLocation,
   showUserLocation = true,
+  showRoute = false,
+  routeData = null,
   className = "w-full h-96"
 }) => {
   const mapRef = useRef(null)
   const [map, setMap] = useState(null)
   const [userLocation, setUserLocation] = useState(null)
+  const [directionsRenderer, setDirectionsRenderer] = useState(null)
   const markersRef = useRef([])
 
   // Initialize map
@@ -36,13 +42,56 @@ const GoogleMap = ({
 
     setMap(mapInstance)
 
+    // Initialize directions renderer
+    const renderer = new window.google.maps.DirectionsRenderer({
+      suppressMarkers: false,
+      polylineOptions: {
+        strokeColor: '#dc2626',
+        strokeWeight: 4,
+        strokeOpacity: 0.8
+      }
+    })
+    renderer.setMap(mapInstance)
+    setDirectionsRenderer(renderer)
+
     // Add click listener
-    if (onMapClick) {
-      mapInstance.addListener('click', (event) => {
-        onMapClick({
-          lat: event.latLng.lat(),
-          lng: event.latLng.lng()
-        })
+    if (onMapClick || onLocationSelect) {
+      mapInstance.addListener('click', async (event) => {
+        const lat = event.latLng.lat()
+        const lng = event.latLng.lng()
+        
+        if (onMapClick) {
+          onMapClick({ lat, lng })
+        }
+        
+        if (onLocationSelect) {
+          try {
+            // Reverse geocode to get address
+            const geocoder = new window.google.maps.Geocoder()
+            geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+              if (status === 'OK' && results[0]) {
+                onLocationSelect({
+                  lat,
+                  lng,
+                  address: results[0].formatted_address
+                })
+              } else {
+                onLocationSelect({
+                  lat,
+                  lng,
+                  address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+                })
+              }
+            })
+          } catch (error) {
+            console.error('Error reverse geocoding:', error)
+            onLocationSelect({
+              lat,
+              lng,
+              address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+            })
+          }
+        }
       })
     }
 
@@ -51,7 +100,7 @@ const GoogleMap = ({
       markersRef.current.forEach(marker => marker.setMap(null))
       markersRef.current = []
     }
-  }, [center, zoom, onMapClick])
+  }, [center, zoom, onMapClick, onLocationSelect])
 
   // Get user location
   useEffect(() => {
@@ -83,7 +132,46 @@ const GoogleMap = ({
     markersRef.current.forEach(marker => marker.setMap(null))
     markersRef.current = []
 
-    // Add new markers
+    // Add pickup location marker
+    if (pickupLocation) {
+      const pickupMarker = new window.google.maps.Marker({
+        position: { lat: pickupLocation.lat, lng: pickupLocation.lng },
+        map,
+        title: 'Pickup Location',
+        icon: {
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="green" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          `),
+          scaledSize: new window.google.maps.Size(32, 32)
+        }
+      })
+      markersRef.current.push(pickupMarker)
+    }
+
+    // Add dropoff location marker
+    if (dropoffLocation) {
+      const dropoffMarker = new window.google.maps.Marker({
+        position: { lat: dropoffLocation.lat, lng: dropoffLocation.lng },
+        map,
+        title: 'Hospital Location',
+        icon: {
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="red" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <path d="M9 10h6"/>
+              <path d="M12 7v6"/>
+            </svg>
+          `),
+          scaledSize: new window.google.maps.Size(32, 32)
+        }
+      })
+      markersRef.current.push(dropoffMarker)
+    }
+
+    // Add other markers
     markers.forEach((markerData) => {
       const marker = new window.google.maps.Marker({
         position: markerData.position,
@@ -102,15 +190,8 @@ const GoogleMap = ({
                   <circle cx="7" cy="18" r="2"/>
                 </svg>
               `)
-            : markerData.type === 'pickup'
-            ? 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="green" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
-              `)
             : 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="red" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="blue" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                   <circle cx="12" cy="10" r="3"/>
                 </svg>
@@ -151,7 +232,43 @@ const GoogleMap = ({
 
       markersRef.current.push(userMarker)
     }
-  }, [map, markers, userLocation, showUserLocation])
+  }, [map, markers, userLocation, showUserLocation, pickupLocation, dropoffLocation])
+
+  // Handle route display
+  useEffect(() => {
+    if (!map || !directionsRenderer || !showRoute) return
+
+    if (pickupLocation && dropoffLocation) {
+      const directionsService = new window.google.maps.DirectionsService()
+      
+      directionsService.route(
+        {
+          origin: { lat: pickupLocation.lat, lng: pickupLocation.lng },
+          destination: { lat: dropoffLocation.lat, lng: dropoffLocation.lng },
+          travelMode: window.google.maps.TravelMode.DRIVING,
+          unitSystem: window.google.maps.UnitSystem.METRIC,
+          avoidHighways: false,
+          avoidTolls: false
+        },
+        (result, status) => {
+          if (status === 'OK') {
+            directionsRenderer.setDirections(result)
+            
+            // Fit map to show entire route
+            const bounds = new window.google.maps.LatLngBounds()
+            bounds.extend({ lat: pickupLocation.lat, lng: pickupLocation.lng })
+            bounds.extend({ lat: dropoffLocation.lat, lng: dropoffLocation.lng })
+            map.fitBounds(bounds)
+          } else {
+            console.error('Directions request failed:', status)
+          }
+        }
+      )
+    } else {
+      // Clear directions if no route should be shown
+      directionsRenderer.setDirections({ routes: [] })
+    }
+  }, [map, directionsRenderer, showRoute, pickupLocation, dropoffLocation])
 
   return (
     <div className={`relative ${className}`}>
