@@ -79,6 +79,104 @@ export const db = {
     return data
   },
 
+  // Ambulances
+  async getAvailableAmbulances() {
+    const { data, error } = await supabase
+      .from('ambulances')
+      .select('*')
+      .eq('is_available', true)
+      .eq('is_verified', true)
+      .order('last_updated', { ascending: false })
+    
+    if (error) throw error
+    return data
+  },
+
+  async findNearestAmbulance(pickupLat, pickupLng) {
+    // Get all available ambulances
+    const ambulances = await this.getAvailableAmbulances()
+    
+    if (ambulances.length === 0) {
+      throw new Error('No ambulances available')
+    }
+
+    // Calculate distance using Haversine formula
+    const calculateDistance = (lat1, lng1, lat2, lng2) => {
+      const R = 6371 // Earth's radius in kilometers
+      const dLat = (lat2 - lat1) * Math.PI / 180
+      const dLng = (lng2 - lng1) * Math.PI / 180
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLng/2) * Math.sin(dLng/2)
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+      return R * c
+    }
+
+    // Find nearest ambulance
+    let nearestAmbulance = null
+    let minDistance = Infinity
+
+    ambulances.forEach(ambulance => {
+      if (ambulance.current_lat && ambulance.current_lng) {
+        const distance = calculateDistance(
+          pickupLat, pickupLng,
+          ambulance.current_lat, ambulance.current_lng
+        )
+        if (distance < minDistance) {
+          minDistance = distance
+          nearestAmbulance = ambulance
+        }
+      }
+    })
+
+    if (!nearestAmbulance) {
+      // If no ambulance has location data, return the first available one
+      nearestAmbulance = ambulances[0]
+    }
+
+    return nearestAmbulance
+  },
+
+  async assignAmbulanceToBooking(bookingId, ambulanceId) {
+    const { data, error } = await supabase
+      .from('bookings')
+      .update({ 
+        ambulance_id: ambulanceId,
+        status: 'accepted',
+        accepted_at: new Date().toISOString()
+      })
+      .eq('id', bookingId)
+      .select()
+      .single()
+    
+    if (error) throw error
+
+    // Mark ambulance as unavailable
+    await supabase
+      .from('ambulances')
+      .update({ is_available: false })
+      .eq('id', ambulanceId)
+
+    return data
+  },
+
+  async updateAmbulanceLocation(ambulanceId, lat, lng) {
+    const { data, error } = await supabase
+      .from('ambulances')
+      .update({
+        current_lat: lat,
+        current_lng: lng,
+        last_updated: new Date().toISOString()
+      })
+      .eq('id', ambulanceId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
   // Drivers
   async getAvailableDrivers(location) {
     const { data, error } = await supabase
@@ -116,7 +214,8 @@ export const db = {
 
   // Bookings
   async createBooking(bookingData) {
-    const { data, error } = await supabase
+    // First create the booking
+    const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert([bookingData])
       .select(`
@@ -125,16 +224,6 @@ export const db = {
           id,
           full_name,
           phone
-        ),
-        drivers (
-          id,
-          vehicle_number,
-          vehicle_type,
-          users (
-            id,
-            full_name,
-            phone
-          )
         ),
         pickup_locations (
           id,
@@ -152,8 +241,67 @@ export const db = {
       `)
       .single()
     
-    if (error) throw error
-    return data
+    if (bookingError) throw bookingError
+
+    // Find and assign nearest ambulance
+    try {
+      const pickupLocation = await supabase
+        .from('pickup_locations')
+        .select('latitude, longitude')
+        .eq('id', bookingData.pickup_location_id)
+        .single()
+
+      if (pickupLocation.data) {
+        const nearestAmbulance = await this.findNearestAmbulance(
+          pickupLocation.data.latitude,
+          pickupLocation.data.longitude
+        )
+
+        if (nearestAmbulance) {
+          await this.assignAmbulanceToBooking(booking.id, nearestAmbulance.id)
+          
+          // Fetch updated booking with ambulance info
+          const { data: updatedBooking } = await supabase
+            .from('bookings')
+            .select(`
+              *,
+              users (
+                id,
+                full_name,
+                phone
+              ),
+              pickup_locations (
+                id,
+                name,
+                latitude,
+                longitude
+              ),
+              hospital_locations (
+                id,
+                name,
+                address,
+                latitude,
+                longitude
+              ),
+              ambulances (
+                id,
+                vehicle_number,
+                vehicle_type,
+                current_lat,
+                current_lng
+              )
+            `)
+            .eq('id', booking.id)
+            .single()
+
+          return updatedBooking.data || booking
+        }
+      }
+    } catch (error) {
+      console.warn('Could not assign ambulance automatically:', error)
+    }
+
+    return booking
   },
 
   async getBooking(bookingId) {
@@ -191,6 +339,13 @@ export const db = {
           address,
           latitude,
           longitude
+        ),
+        ambulances (
+          id,
+          vehicle_number,
+          vehicle_type,
+          current_lat,
+          current_lng
         )
       `)
       .eq('id', bookingId)
@@ -213,6 +368,18 @@ export const db = {
       .single()
     
     if (error) throw error
+
+    // If booking is completed or cancelled, make ambulance available again
+    if (status === 'completed' || status === 'cancelled') {
+      const booking = await this.getBooking(bookingId)
+      if (booking.ambulance_id) {
+        await supabase
+          .from('ambulances')
+          .update({ is_available: true })
+          .eq('id', booking.ambulance_id)
+      }
+    }
+
     return data
   },
 
@@ -243,6 +410,13 @@ export const db = {
           address,
           latitude,
           longitude
+        ),
+        ambulances (
+          id,
+          vehicle_number,
+          vehicle_type,
+          current_lat,
+          current_lng
         )
       `)
       .eq('user_id', userId)
@@ -378,6 +552,23 @@ export const subscriptions = {
           schema: 'public',
           table: 'bookings',
           filter: `id=eq.${bookingId}`
+        },
+        callback
+      )
+      .subscribe()
+  },
+
+  // Subscribe to ambulance location updates
+  subscribeToAmbulanceLocation(ambulanceId, callback) {
+    return supabase
+      .channel(`ambulance:${ambulanceId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'ambulances',
+          filter: `id=eq.${ambulanceId}`
         },
         callback
       )

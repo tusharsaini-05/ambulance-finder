@@ -9,8 +9,10 @@ const GoogleMap = ({
   onLocationSelect,
   pickupLocation,
   dropoffLocation,
+  ambulanceLocation,
   showUserLocation = true,
   showRoute = false,
+  trackingMode = false,
   routeData = null,
   className = "w-full h-96"
 }) => {
@@ -54,8 +56,8 @@ const GoogleMap = ({
     renderer.setMap(mapInstance)
     setDirectionsRenderer(renderer)
 
-    // Add click listener
-    if (onMapClick || onLocationSelect) {
+    // Add click listener (only if not in tracking mode)
+    if (!trackingMode && (onMapClick || onLocationSelect)) {
       mapInstance.addListener('click', async (event) => {
         const lat = event.latLng.lat()
         const lng = event.latLng.lng()
@@ -100,7 +102,7 @@ const GoogleMap = ({
       markersRef.current.forEach(marker => marker.setMap(null))
       markersRef.current = []
     }
-  }, [center, zoom, onMapClick, onLocationSelect])
+  }, [center, zoom, onMapClick, onLocationSelect, trackingMode])
 
   // Get user location
   useEffect(() => {
@@ -171,6 +173,32 @@ const GoogleMap = ({
       markersRef.current.push(dropoffMarker)
     }
 
+    // Add ambulance location marker
+    if (ambulanceLocation) {
+      const ambulanceMarker = new window.google.maps.Marker({
+        position: { lat: ambulanceLocation.lat, lng: ambulanceLocation.lng },
+        map,
+        title: 'Ambulance Location',
+        icon: {
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="red" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 10H6"/>
+              <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
+              <path d="M19 18h2a1 1 0 0 0 1-1v-3.28a1 1 0 0 0-.684-.948l-1.923-.641a1 1 0 0 1-.578-.502l-1.539-3.076A1 1 0 0 0 16.382 8H14"/>
+              <path d="M8 8v4"/>
+              <path d="M9 18h6"/>
+              <circle cx="17" cy="18" r="2"/>
+              <circle cx="7" cy="18" r="2"/>
+            </svg>
+          `),
+          scaledSize: new window.google.maps.Size(40, 40),
+          anchor: new window.google.maps.Point(20, 20)
+        },
+        animation: window.google.maps.Animation.BOUNCE
+      })
+      markersRef.current.push(ambulanceMarker)
+    }
+
     // Add other markers
     markers.forEach((markerData) => {
       const marker = new window.google.maps.Marker({
@@ -178,24 +206,12 @@ const GoogleMap = ({
         map,
         title: markerData.title,
         icon: markerData.icon || {
-          url: markerData.type === 'ambulance' 
-            ? 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M10 10H6"/>
-                  <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
-                  <path d="M19 18h2a1 1 0 0 0 1-1v-3.28a1 1 0 0 0-.684-.948l-1.923-.641a1 1 0 0 1-.578-.502l-1.539-3.076A1 1 0 0 0 16.382 8H14"/>
-                  <path d="M8 8v4"/>
-                  <path d="M9 18h6"/>
-                  <circle cx="17" cy="18" r="2"/>
-                  <circle cx="7" cy="18" r="2"/>
-                </svg>
-              `)
-            : 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="blue" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
-              `),
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="blue" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          `),
           scaledSize: new window.google.maps.Size(32, 32)
         }
       })
@@ -214,7 +230,7 @@ const GoogleMap = ({
     })
 
     // Add user location marker
-    if (userLocation && showUserLocation) {
+    if (userLocation && showUserLocation && !trackingMode) {
       const userMarker = new window.google.maps.Marker({
         position: userLocation,
         map,
@@ -232,7 +248,7 @@ const GoogleMap = ({
 
       markersRef.current.push(userMarker)
     }
-  }, [map, markers, userLocation, showUserLocation, pickupLocation, dropoffLocation])
+  }, [map, markers, userLocation, showUserLocation, pickupLocation, dropoffLocation, ambulanceLocation, trackingMode])
 
   // Handle route display
   useEffect(() => {
@@ -258,6 +274,9 @@ const GoogleMap = ({
             const bounds = new window.google.maps.LatLngBounds()
             bounds.extend({ lat: pickupLocation.lat, lng: pickupLocation.lng })
             bounds.extend({ lat: dropoffLocation.lat, lng: dropoffLocation.lng })
+            if (ambulanceLocation) {
+              bounds.extend({ lat: ambulanceLocation.lat, lng: ambulanceLocation.lng })
+            }
             map.fitBounds(bounds)
           } else {
             console.error('Directions request failed:', status)
@@ -268,7 +287,7 @@ const GoogleMap = ({
       // Clear directions if no route should be shown
       directionsRenderer.setDirections({ routes: [] })
     }
-  }, [map, directionsRenderer, showRoute, pickupLocation, dropoffLocation])
+  }, [map, directionsRenderer, showRoute, pickupLocation, dropoffLocation, ambulanceLocation])
 
   return (
     <div className={`relative ${className}`}>
