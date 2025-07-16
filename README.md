@@ -1,71 +1,108 @@
-# Getting Started with Create React App
+# 🚑 Ambulance Finder
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Revolutionizing emergency medical services through technology, connecting patients with life-saving care when every second matters.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🌟 Live Demo
 
-### `npm start`
+- **Frontend**: [https://ambulance-main-pacg.vercel.app](https://ambulance-main-pacg.vercel.app)
+- **Backend**: [https://ambulance-backend-gbdz.onrender.com](https://ambulance-backend-gbdz.onrender.com)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+---
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## 🎯 Our Mission
 
-### `npm test`
+We believe that access to emergency medical care should be immediate, reliable, and stress-free. Our platform bridges the gap between patients in crisis and the medical professionals who can help them.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Using cutting-edge technology, real-time tracking, and a network of verified medical professionals, we're making emergency medical transport more efficient and accessible than ever before.
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 💡 Features
+### 🏠 Homepage  
+![Homepage](https://res.cloudinary.com/dvlgo9z09/image/upload/v1752688065/landing_page_wwskqa.png)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 📝 Signup Page  
+![Signup](https://res.cloudinary.com/dvlgo9z09/image/upload/v1752688079/sign_up_bd0jdp.png)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 🔐 Login Page  
+![Login](https://res.cloudinary.com/dvlgo9z09/image/upload/v1752688080/sign_in_dfandd.png)
 
-### `npm run eject`
+### 📍 Real-Time Tracking  
+![Real-Time Tracking](https://res.cloudinary.com/dvlgo9z09/image/upload/v1752688065/most_imp_p3yquk.png)
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+### 📋 Working of Website  
+![Working of Website](https://res.cloudinary.com/dvlgo9z09/image/upload/v1752688154/services_riho88.png)
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Overview  
+![Overview](https://res.cloudinary.com/dvlgo9z09/image/upload/v1752688147/footer_qcqt6g.png)
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+----
+- 🔐 User authentication using Supabase
+- 📍 Real-time ambulance tracking with Socket.IO
+- 🚑 Register and manage ambulances and drivers
+- 🧑‍⚕️ Driver-side live location updates
+- ⚡ Emergency booking system with instant assignment
+- 📬 Email verification on signup
+- 🌐 Hosted frontend and backend
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+---
+## 🛠️ Tech Stack
 
-## Learn More
+- **Frontend**: React.js + Tailwind CSS
+- **Backend**: Express.js + Socket.IO
+- **Auth**: Supabase
+- **Hosting**: Vercel (frontend), Render (backend)
+- **Maps**: Google Maps API
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+---
+## 📊 Our Impact
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+| Metric               | Value         |
+|----------------------|---------------|
+| Lives Saved          | 10,000+       |
+| Verified Drivers     | 500+          |
+| Cities Covered       | 50+           |
+| Avg Response Time    | 8 minutes     |
 
-### Code Splitting
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## 🧭 Our Values
 
-### Analyzing the Bundle Size
+- 💓 **Compassionate Care**: Every emergency is treated with urgency.
+- 🔒 **Safety & Reliability**: Vetted and certified professionals.
+- ⚡ **Rapid Response**: Advanced dispatch systems.
+- 🏅 **Excellence**: Top-tier service quality.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
 
-### Making a Progressive Web App
+## 🔧 Local Setup
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### 1. Clone the Repository
 
-### Advanced Configuration
+git clone https://github.com/tusharsaini-05/ambulance-main/ambulance-finder.git
+cd ambulance-finder
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+2. Set Up .env File
 
-### Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+VITE_BACKEND_URL=https://ambulance-backend-gbdz.onrender.com
+VITE_SOCKET_SERVER_URL=https://ambulance-backend-gbdz.onrender.com
 
-### `npm run build` fails to minify
+3. Install Frontend Dependencies
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-# ambulance-finder
+cd frontend
+npm install
+npm run dev
+
+4. Install Backend Dependencies
+
+cd backend
+npm install
+npm run dev
+
+
+
